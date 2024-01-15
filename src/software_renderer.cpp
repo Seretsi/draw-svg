@@ -144,7 +144,7 @@ void SoftwareRendererImp::draw_line( Line& line ) {
   Vector2D p0 = transform(line.from);
   Vector2D p1 = transform(line.to);
   rasterize_line( p0.x, p0.y, p1.x, p1.y, line.style.strokeColor );
-
+  //rasterize_line(496, 296, 660, 125, line.style.strokeColor);
 }
 
 void SoftwareRendererImp::draw_polyline( Polyline& polyline ) {
@@ -274,16 +274,126 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
   pixel_buffer[4 * (sx + sy * width) + 1] = (uint8_t)(color.g * 255);
   pixel_buffer[4 * (sx + sy * width) + 2] = (uint8_t)(color.b * 255);
   pixel_buffer[4 * (sx + sy * width) + 3] = (uint8_t)(color.a * 255);
+}
 
+void swaps(float& x0, float& y0,
+	float& x1, float& y1)
+{
+	auto temp = x0;
+	x0 = x1;
+	x1 = temp;
+	temp = y0;
+	y0 = y1;
+	y1 = temp;
+}
+inline void uint8_to_float(float dst[4], unsigned char* src) {
+	uint8_t* src_uint8 = (uint8_t*)src;
+	dst[0] = src_uint8[0] / 255.f;
+	dst[1] = src_uint8[1] / 255.f;
+	dst[2] = src_uint8[2] / 255.f;
+	dst[3] = src_uint8[3] / 255.f;
+}
+
+inline void float_to_uint8(unsigned char* dst, float src[4]) {
+	uint8_t* dst_uint8 = (uint8_t*)dst;
+	dst_uint8[0] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[0])));
+	dst_uint8[1] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[1])));
+	dst_uint8[2] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[2])));
+	dst_uint8[3] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[3])));
 }
 
 void SoftwareRendererImp::rasterize_line( float x0, float y0,
                                           float x1, float y1,
                                           Color color) {
-
-  // Task 0: 
+	// check bounds
+	if (x0 < 0 || x0 >= width) return;
+	if (y0 < 0 || y0 >= height) return;
+	if (x1 < 0 || x1 >= width) return;
+	if (y1 < 0 || y1 >= height) return;
+	// Task 0: 
   // Implement Bresenham's algorithm (delete the line below and implement your own)
-  ref->rasterize_line_helper(x0, y0, x1, y1, width, height, color, this);
+  //ref->rasterize_line_helper(x0, y0, x1, y1, width, height, color, this);
+	if (x0 > x1)
+		swaps(x0, y0, x1, y1);
+
+	if (y0 <= y1)
+	{
+		if ((y1 - y0)/(x1 - x0) > 1.0f)
+		{
+			// mirror the line over y = x
+			float temp;
+			temp = x0; x0 = y0; y0 = temp;
+			temp = x1; x1 = y1; y1 = temp;
+			if (x0 > x1) swaps(x0, y0, x1, y1);
+			float dx = x1 - x0,
+				dy = y1 - y0,
+				y = y0,
+				eps = 0;
+
+			for (float x = x0; x <= x1; x++) {
+				rasterize_point(y, x, color);
+				eps += dy;
+				if ((eps * 2) >= dx) {
+					y++;  eps -= dx;
+				}
+			}
+		}
+		else
+		{
+			//step over x
+			float dx = x1 - x0,
+				dy = y1 - y0,
+				y = y0,
+				eps = 0;
+
+			for (float x = x0; x <= x1; x++) {
+				rasterize_point(x, y, color);
+				eps += dy;
+				if ((eps * 2) >= dx) {
+					y++;  eps -= dx;
+				}
+			}
+		}
+	}
+	else
+	{
+		if ((y1 - y0)/(x1 - x0) < -1.0f)
+		{
+			// mirror the line over y = x
+			float temp;
+			temp = x0; x0 = y0; y0 = temp;
+			temp = x1; x1 = y1; y1 = temp;
+			if (x0 > x1) swaps(x0, y0, x1, y1);
+			float dx = x1 - x0,
+				dy = y1 - y0,
+				y = y0,
+				eps = 0;
+
+			for (float x = x0; x <= x1; x++) {
+				rasterize_point(y, x, color);
+				eps += dy;
+				if ((eps * 2) < -dx) {
+					y--;  eps += dx;
+				}
+			}
+		}
+		else
+		{
+			//step over x
+			float dx = x1 - x0,
+				dy = y1 - y0,
+				y = y0,
+				eps = 0;
+
+			for (float x = x0; x <= x1; x++) {
+				rasterize_point(x, y, color);
+				eps += dy;
+				if ((eps * 2) < -dx) {
+					y--;  eps += dx;
+				}
+			}
+		}
+	}
 
   // Advanced Task
   // Drawing Smooth Lines with Line Width
