@@ -405,8 +405,67 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
                                               Color color ) {
   // Task 1: 
   // Implement triangle rasterization
-
-  // Advanced Task
+	//Vector2D aToB(x1 - x0, y1 - y0);
+	//Vector2D aToC(x2 - x0, y2 - y0);
+	//float p = (float)cross(aToB, aToC);
+	//if (p > 0) // epsilon clean up
+	//{
+	//	float temp;
+	//	temp = x1; x1 = x2; x2 = temp;
+	//	temp = y1; y1 = y2; y2 = temp;
+	//}
+	//float dy0 = y1 - y0;
+	//float dy1 = y2 - y1;
+	//float dy2 = y0 - y2;
+	//float dx0 = x1 - x0;
+	//float dx1 = x2 - x1;
+	//float dx2 = x0 - x2;
+	//float c0 = y0 * dx0 - x0 * dy0;
+	//float c1 = y1 * dx1 - x1 * dy1;
+	//float c2 = y2 * dx2 - x2 * dy2;
+	//float minx = min(x0, min(x1, x2));
+	//float maxx = max(x0, max(x1, x2));
+	//float miny = min(y0, min(y1, y2));
+	//float maxy = max(y0, max(y1, y2));
+	//for (int x = minx; x <= maxx; x++)
+	//	for (int y = miny; y <= maxy; y++)
+	//	{
+	//		if ((dy0 * (x+0.5f) - dx0 * (y + 0.5f) + c0) < 0.0f) // inside ab
+	//			continue;
+	//		if ((dy1 * (x + 0.5f) - dx1 * (y + 0.5f) + c2) < 0.0f) // inside ab
+	//			continue;
+	//		if ((dy2 * (x + 0.5f) - dx2 * (y + 0.5f) + c2) < 0.0f) // inside ab
+	//			continue;
+	//		rasterize_point(x, y, color);
+	//	}
+	Vector2D aToB(x1 - x0, y1 - y0);
+	Vector2D aToC(x2 - x0, y2 - y0);
+	float p = (float)cross(aToB, aToC); //confirm
+	if (p < 0) // epsilon clean up
+	{
+		float temp;
+		temp = x1; x1 = x2; x2 = temp;
+		temp = y1; y1 = y2; y2 = temp;
+	}
+	Vector2D ab(x1 - x0, y1 - y0);
+	Vector2D bc(x2 - x1, y2 - y1);
+	Vector2D ca(x0 - x2, y0 - y2);
+	float minx = min(x0, min(x1, x2));
+	float maxx = max(x0, max(x1, x2));
+	float miny = min(y0, min(y1, y2));
+	float maxy = max(y0, max(y1, y2));
+	for (float x = minx; x < maxx; x++)
+		for (float y = miny; y < maxy; y++)
+		{
+			if (!((x-x0)*(y1-y0)-(y-y0)*(x1-x0) <= 0)) // inside ab
+				continue;
+			if (!((x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) <= 0)) // inside ab
+				continue;
+			if (!((x - x2) * (y0 - y2) - (y - y2) * (x0 - x2) <= 0)) // inside ab
+				continue;
+			rasterize_point(x, y, color);
+		}
+	// Advanced Task
   // Implementing Triangle Edge Rules
 
 }
