@@ -440,8 +440,8 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
 	//	}
 	Vector2D aToB(x1 - x0, y1 - y0);
 	Vector2D aToC(x2 - x0, y2 - y0);
-	float p = (float)cross(aToB, aToC); //confirm
-	if (p < 0) // epsilon clean up
+	float p = (float)cross(aToB, aToC);
+	if (p < 0)
 	{
 		float temp;
 		temp = x1; x1 = x2; x2 = temp;
@@ -454,20 +454,19 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
 	float maxx = max(x0, max(x1, x2));
 	float miny = min(y0, min(y1, y2));
 	float maxy = max(y0, max(y1, y2));
-	for (float x = minx; x < maxx; x++)
-		for (float y = miny; y < maxy; y++)
+	for (int x = minx; x < maxx; x++)
+		for (int y = miny; y < maxy; y++)
 		{
-			if (!((x-x0)*(y1-y0)-(y-y0)*(x1-x0) <= 0)) // inside ab
+			if (((x + 0.5f) - x0) * (y1 - y0) - ((y + 0.5f) - y0) * (x1 - x0) > 0) // inside ab
 				continue;
-			if (!((x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) <= 0)) // inside ab
+			if (((x + 0.5f) - x1) * (y2 - y1) - ((y + 0.5f) - y1) * (x2 - x1) > 0) // inside ab
 				continue;
-			if (!((x - x2) * (y0 - y2) - (y - y2) * (x0 - x2) <= 0)) // inside ab
+			if (((x + 0.5f) - x2) * (y0 - y2) - ((y + 0.5f) - y2) * (x0 - x2) > 0) // inside ab
 				continue;
 			rasterize_point(x, y, color);
 		}
 	// Advanced Task
   // Implementing Triangle Edge Rules
-
 }
 
 void SoftwareRendererImp::rasterize_image( float x0, float y0,
