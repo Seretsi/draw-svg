@@ -20,10 +20,7 @@ void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
 
 	int ss_width = width * sample_rate;
 	int ss_height = height * sample_rate;
-	// fill in the nearest pixel
-	int sx = (int)floor(sx);
-	int sy = (int)floor(sy);
-
+	
 	// check bounds
 	if (sx < 0 || sx >= ss_width) return;
 	if (sy < 0 || sy >= ss_height) return;
@@ -34,6 +31,7 @@ void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
 	sample_buffer[4 * (sx + sy * ss_width) + 1] = (uint8_t)(color.g * 255);
 	sample_buffer[4 * (sx + sy * ss_width) + 2] = (uint8_t)(color.b * 255);
 	sample_buffer[4 * (sx + sy * ss_width) + 3] = (uint8_t)(color.a * 255);
+
 }
 
 // fill samples in the entire pixel specified by pixel coordinates
@@ -46,12 +44,13 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 	if (y < 0 || y >= height) return;
 
 	Color pixel_color;
-	float inv255 = 1.0 / 255.0;
+	float inv255 = 1.0f / 255.0f;
 	pixel_color.r = pixel_buffer[4 * (x + y * width)] * inv255;
 	pixel_color.g = pixel_buffer[4 * (x + y * width) + 1] * inv255;
 	pixel_color.b = pixel_buffer[4 * (x + y * width) + 2] * inv255;
 	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255;
 
+	// todo take sample size into account in mix math
 	pixel_color = ref->alpha_blending_helper(pixel_color, color);
 
 	pixel_buffer[4 * (x + y * width)] = (uint8_t)(pixel_color.r * 255);
@@ -59,6 +58,26 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 	pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(pixel_color.b * 255);
 	pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(pixel_color.a * 255);
 
+
+	/*Color c(0.0f, 0.0f, 0.0f, 0.0f);
+	int block_sizex = x * sample_rate;
+	int block_sizey = y * sample_rate;
+	for (int ssx = block_sizex; ssx < block_sizex + sample_rate; ssx++)
+		for (int ssy = block_sizey; ssy < block_sizey + sample_rate; ssy++)
+		{
+			c.r += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate)]) / 255.0f;
+			c.g += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
+			c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
+			c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
+		}
+	c.r /= sample_rate * sample_rate;
+	c.g /= sample_rate * sample_rate;
+	c.b /= sample_rate * sample_rate;
+	c.a /= sample_rate * sample_rate;
+	pixel_buffer[4 * (x + y * width)] = (uint8_t)(c.r * 255);
+	pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(c.g * 255);
+	pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(c.b * 255);
+	pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(c.a * 255);*/
 }
 
 void SoftwareRendererImp::draw_svg( SVG& svg ) {
@@ -466,7 +485,7 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
 				continue;
 			if (((x + sample_ctr_offset) - x2) * (y0 - y2) - ((y + sample_ctr_offset) - y2) * (x0 - x2) > 0) // inside ab
 				continue;
-			rasterize_point(ssx, ssy, color);
+			fill_sample(ssx, ssy, color);
 		}
 	// Advanced Task
   // Implementing Triangle Edge Rules
@@ -497,36 +516,13 @@ void SoftwareRendererImp::resolve( void ) {
 			for (int ssx = block_sizex; ssx < block_sizex + sample_rate; ssx++)
 				for (int ssy = block_sizey; ssy < block_sizey + sample_rate; ssy++)
 				{
-					c.r += ((float)sample_buffer[4*(ssx+ssy*width*sample_rate)])/255.0f;
+					c.r += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate)]) / 255.0f;
 					c.g += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
 					c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
 					c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
+					fill_pixel(x, y, c);
 				}
-			c.r /= sample_rate*sample_rate;
-			c.g /= sample_rate*sample_rate;
-			c.b /= sample_rate*sample_rate;
-			c.a /= sample_rate*sample_rate;
-			pixel_buffer[4 * (x + y * width)] = (uint8_t)(c.r * 255);
-			pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(c.g * 255);
-			pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(c.b * 255);
-			pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(c.a * 255);
 		}
-	//int ss_width = width * sample_rate;
-	//int ss_height = height * sample_rate;
-	//// fill in the nearest pixel
-	//int sx = (int)floor(x);
-	//int sy = (int)floor(y);
-
-	//// check bounds
-	//if (sx < 0 || sx >= ss_width) return;
-	//if (sy < 0 || sy >= ss_height) return;
-
-	//// fill sample - NOT doing alpha blending!
-	//// TODO: Call fill_pixel here to run alpha blending
-	//pixel_buffer[4 * (sx + sy * ss_width)] = (uint8_t)(color.r * 255);
-	//pixel_buffer[4 * (sx + sy * ss_width) + 1] = (uint8_t)(color.g * 255);
-	//pixel_buffer[4 * (sx + sy * ss_width) + 2] = (uint8_t)(color.b * 255);
-	//pixel_buffer[4 * (sx + sy * ss_width) + 3] = (uint8_t)(color.a * 255);
   return;
 
 }
