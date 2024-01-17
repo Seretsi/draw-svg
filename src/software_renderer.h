@@ -67,6 +67,9 @@ class SoftwareRenderer : public SVGRenderer {
   // Pixel buffer dimension (in pixels)
   size_t width; size_t height;
 
+  // super sample buffer
+  unsigned char* sample_buffer;
+
   // SVG outline bbox (in pixels)
 	Vector2D svg_bbox_top_left, svg_bbox_bottom_right;
 

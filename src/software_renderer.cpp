@@ -17,6 +17,23 @@ namespace CS248 {
 // fill a sample location with color
 void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
   // Task 2: implement this function
+
+	int ss_width = width * sample_rate;
+	int ss_height = height * sample_rate;
+	// fill in the nearest pixel
+	int sx = (int)floor(sx);
+	int sy = (int)floor(sy);
+
+	// check bounds
+	if (sx < 0 || sx >= ss_width) return;
+	if (sy < 0 || sy >= ss_height) return;
+
+	// fill sample - NOT doing alpha blending!
+	// TODO: Call fill_pixel here to run alpha blending
+	sample_buffer[4 * (sx + sy * ss_width)] = (uint8_t)(color.r * 255);
+	sample_buffer[4 * (sx + sy * ss_width) + 1] = (uint8_t)(color.g * 255);
+	sample_buffer[4 * (sx + sy * ss_width) + 2] = (uint8_t)(color.b * 255);
+	sample_buffer[4 * (sx + sy * ss_width) + 3] = (uint8_t)(color.a * 255);
 }
 
 // fill samples in the entire pixel specified by pixel coordinates
@@ -90,7 +107,7 @@ void SoftwareRendererImp::set_pixel_buffer( unsigned char* pixel_buffer,
   this->pixel_buffer = pixel_buffer;
   this->width = width;
   this->height = height;
-
+  this->sample_buffer = new unsigned char[4 * this->sample_rate * width * height];
 }
 
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
@@ -144,7 +161,6 @@ void SoftwareRendererImp::draw_line( Line& line ) {
   Vector2D p0 = transform(line.from);
   Vector2D p1 = transform(line.to);
   rasterize_line( p0.x, p0.y, p1.x, p1.y, line.style.strokeColor );
-  //rasterize_line(496, 296, 660, 125, line.style.strokeColor);
 }
 
 void SoftwareRendererImp::draw_polyline( Polyline& polyline ) {
@@ -285,21 +301,6 @@ void swaps(float& x0, float& y0,
 	temp = y0;
 	y0 = y1;
 	y1 = temp;
-}
-inline void uint8_to_float(float dst[4], unsigned char* src) {
-	uint8_t* src_uint8 = (uint8_t*)src;
-	dst[0] = src_uint8[0] / 255.f;
-	dst[1] = src_uint8[1] / 255.f;
-	dst[2] = src_uint8[2] / 255.f;
-	dst[3] = src_uint8[3] / 255.f;
-}
-
-inline void float_to_uint8(unsigned char* dst, float src[4]) {
-	uint8_t* dst_uint8 = (uint8_t*)dst;
-	dst_uint8[0] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[0])));
-	dst_uint8[1] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[1])));
-	dst_uint8[2] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[2])));
-	dst_uint8[3] = (uint8_t)(255.f * max(0.0f, min(1.0f, src[3])));
 }
 
 void SoftwareRendererImp::rasterize_line( float x0, float y0,
@@ -454,16 +455,18 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
 	float maxx = max(x0, max(x1, x2));
 	float miny = min(y0, min(y1, y2));
 	float maxy = max(y0, max(y1, y2));
-	for (int x = minx; x < maxx; x++)
-		for (int y = miny; y < maxy; y++)
+	float sample_ctr_offset = 1.0f / (sample_rate * 2.0f);
+
+	for (float x = floor(minx), ssx = x; x < maxx; x = x+(1/sample_rate), ssx++)
+		for (float y = floor(miny), ssy = y; y < maxy; y = y+(1/sample_rate), ssy++)
 		{
-			if (((x + 0.5f) - x0) * (y1 - y0) - ((y + 0.5f) - y0) * (x1 - x0) > 0) // inside ab
+			if (((x + sample_ctr_offset) - x0) * (y1 - y0) - ((y + sample_ctr_offset) - y0) * (x1 - x0) > 0) // inside ab
 				continue;
-			if (((x + 0.5f) - x1) * (y2 - y1) - ((y + 0.5f) - y1) * (x2 - x1) > 0) // inside ab
+			if (((x + sample_ctr_offset) - x1) * (y2 - y1) - ((y + sample_ctr_offset) - y1) * (x2 - x1) > 0) // inside ab
 				continue;
-			if (((x + 0.5f) - x2) * (y0 - y2) - ((y + 0.5f) - y2) * (x0 - x2) > 0) // inside ab
+			if (((x + sample_ctr_offset) - x2) * (y0 - y2) - ((y + sample_ctr_offset) - y2) * (x0 - x2) > 0) // inside ab
 				continue;
-			rasterize_point(x, y, color);
+			rasterize_point(ssx, ssy, color);
 		}
 	// Advanced Task
   // Implementing Triangle Edge Rules
@@ -483,6 +486,47 @@ void SoftwareRendererImp::resolve( void ) {
   // Task 2: 
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 2".
+	// WHAT TO DO: walk through using block grid averaging pixels in ss into image
+
+	for (int x = 0; x < width; x++)
+		for (int y = 0; y < height; y++)
+		{
+			Color c(0.0f, 0.0f, 0.0f, 0.0f);
+			int block_sizex = x * sample_rate;
+			int block_sizey = y * sample_rate;
+			for (int ssx = block_sizex; ssx < block_sizex + sample_rate; ssx++)
+				for (int ssy = block_sizey; ssy < block_sizey + sample_rate; ssy++)
+				{
+					c.r += ((float)sample_buffer[4*(ssx+ssy*width*sample_rate)])/255.0f;
+					c.g += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
+					c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
+					c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
+				}
+			c.r /= sample_rate*sample_rate;
+			c.g /= sample_rate*sample_rate;
+			c.b /= sample_rate*sample_rate;
+			c.a /= sample_rate*sample_rate;
+			pixel_buffer[4 * (x + y * width)] = (uint8_t)(c.r * 255);
+			pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(c.g * 255);
+			pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(c.b * 255);
+			pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(c.a * 255);
+		}
+	//int ss_width = width * sample_rate;
+	//int ss_height = height * sample_rate;
+	//// fill in the nearest pixel
+	//int sx = (int)floor(x);
+	//int sy = (int)floor(y);
+
+	//// check bounds
+	//if (sx < 0 || sx >= ss_width) return;
+	//if (sy < 0 || sy >= ss_height) return;
+
+	//// fill sample - NOT doing alpha blending!
+	//// TODO: Call fill_pixel here to run alpha blending
+	//pixel_buffer[4 * (sx + sy * ss_width)] = (uint8_t)(color.r * 255);
+	//pixel_buffer[4 * (sx + sy * ss_width) + 1] = (uint8_t)(color.g * 255);
+	//pixel_buffer[4 * (sx + sy * ss_width) + 2] = (uint8_t)(color.b * 255);
+	//pixel_buffer[4 * (sx + sy * ss_width) + 3] = (uint8_t)(color.a * 255);
   return;
 
 }
