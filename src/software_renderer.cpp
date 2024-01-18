@@ -46,14 +46,14 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 	float inv255 = 1.0f / 255.0f;
 	float weight = 1.0f / (this->sample_rate * this->sample_rate);
 
-	pixel_color.r = pixel_buffer[4 * (x + y * width)] * inv255 * 1;
-	pixel_color.g = pixel_buffer[4 * (x + y * width) + 1] * inv255 * 1;
-	pixel_color.b = pixel_buffer[4 * (x + y * width) + 2] * inv255 * 1;
-	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255 * 1;
+	pixel_color.r = pixel_buffer[4 * (x + y * width)] * inv255;
+	pixel_color.g = pixel_buffer[4 * (x + y * width) + 1] * inv255;
+	pixel_color.b = pixel_buffer[4 * (x + y * width) + 2] * inv255;
+	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255;
 
 	// todo take sample size into account in mix math
 	
-	pixel_color = ref->alpha_blending_helper(pixel_color, color);
+	pixel_color = ref->alpha_blending_helper(pixel_color, weight*color);
 
 	pixel_buffer[4 * (x + y * width)] += (uint8_t)(pixel_color.r * 255);
 	pixel_buffer[4 * (x + y * width) + 1] += (uint8_t)(pixel_color.g * 255);
@@ -520,10 +520,10 @@ void SoftwareRendererImp::resolve( void ) {
 			for (int ssx = block_sizex; ssx < block_sizex + sample_rate; ssx++)
 				for (int ssy = block_sizey; ssy < block_sizey + sample_rate; ssy++)
 				{
-					c.r += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate)]) / 255.0f;
-					c.g += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
-					c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
-					c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
+					c.r = ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate)]) / 255.0f;
+					c.g = ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
+					c.b = ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
+					c.a = ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
 					fill_pixel(x, y, c);
 				}
 		}
