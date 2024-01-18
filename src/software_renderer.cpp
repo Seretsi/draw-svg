@@ -44,7 +44,6 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 
 	Color pixel_color;
 	float inv255 = 1.0f / 255.0f;
-	float weight = 1.0f / (this->sample_rate * this->sample_rate);
 
 	pixel_color.r = pixel_buffer[4 * (x + y * width)] * inv255;
 	pixel_color.g = pixel_buffer[4 * (x + y * width) + 1] * inv255;
@@ -52,7 +51,7 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255;
 
 	// todo take sample size into account in mix math
-	pixel_color = ref->alpha_blending_helper(pixel_color, weight*color);
+	pixel_color = ref->alpha_blending_helper(pixel_color, color);
 
 	pixel_buffer[4 * (x + y * width)] += (uint8_t)(pixel_color.r * 255);
 	pixel_buffer[4 * (x + y * width) + 1] += (uint8_t)(pixel_color.g * 255);
@@ -119,7 +118,6 @@ void SoftwareRendererImp::set_pixel_buffer( unsigned char* pixel_buffer,
   {
 	  this->sample_buffer.clear();
   }
-  // this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
   this->sample_buffer.resize(4 * this->sample_rate * this->sample_rate * width * height);
 }
 
@@ -524,7 +522,13 @@ void SoftwareRendererImp::resolve( void ) {
 					c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
 					c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
 				}
+			if (x == 567 && y == 360) {
+				int a = 0;
+			}
 			c.r /= (float)(sample_rate * sample_rate);
+			c.g /= (float)(sample_rate * sample_rate);
+			c.b /= (float)(sample_rate * sample_rate);
+			c.a /= (float)(sample_rate * sample_rate);
 			fill_pixel(x, y, c);
 		}
 	return;
