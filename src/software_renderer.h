@@ -157,8 +157,8 @@ private:
 
 	SoftwareRendererRef *ref;
 
-	// super sample buffer
-	unsigned char* sample_buffer = nullptr;
+	// super sample buffera
+	std::vector<unsigned char> sample_buffer;
 
 }; // class SoftwareRendererImp
 

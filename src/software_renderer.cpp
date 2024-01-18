@@ -98,12 +98,12 @@ void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
   this->sample_rate = sample_rate;
   printf("sample rate: %zu\n", sample_rate);
 
-  if (this->sample_buffer != nullptr)
+  if (!this->sample_buffer.empty())
   {
-	  delete[] this->sample_buffer;
-	  this->sample_buffer = nullptr;
+	  this->sample_buffer.clear();
   }
-  this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
+  // this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
+  this->sample_buffer.resize(4 * this->sample_rate * this->sample_rate * width * height);
 }
 
 void SoftwareRendererImp::set_pixel_buffer( unsigned char* pixel_buffer,
@@ -115,12 +115,12 @@ void SoftwareRendererImp::set_pixel_buffer( unsigned char* pixel_buffer,
   this->width = width;
   this->height = height;
 
-  if (this->sample_buffer != nullptr)
+  if (!this->sample_buffer.empty())
   {
-	  delete[] this->sample_buffer;
-	  this->sample_buffer = nullptr;
+	  this->sample_buffer.clear();
   }
-  this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
+  // this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
+  this->sample_buffer.resize(4 * this->sample_rate * this->sample_rate * width * height);
 }
 
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
