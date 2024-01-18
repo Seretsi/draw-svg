@@ -29,7 +29,7 @@ class SoftwareRenderer : public SVGRenderer {
   SoftwareRenderer( ) : sample_rate (1) { }
 
   // Free used resources
-  virtual ~SoftwareRenderer( ) { }
+  virtual ~SoftwareRenderer() { }
 
   // Draw an svg input to pixel buffer
   virtual void draw_svg( SVG& svg ) = 0;
@@ -66,9 +66,6 @@ class SoftwareRenderer : public SVGRenderer {
 
   // Pixel buffer dimension (in pixels)
   size_t width; size_t height;
-
-  // super sample buffer
-  unsigned char* sample_buffer;
 
   // SVG outline bbox (in pixels)
 	Vector2D svg_bbox_top_left, svg_bbox_bottom_right;
@@ -159,6 +156,10 @@ private:
 	Color alpha_blending(Color pixel_color, Color color);
 
 	SoftwareRendererRef *ref;
+
+	// super sample buffer
+	unsigned char* sample_buffer = nullptr;
+
 }; // class SoftwareRendererImp
 
 

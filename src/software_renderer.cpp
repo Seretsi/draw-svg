@@ -26,7 +26,6 @@ void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
 	if (sy < 0 || sy >= ss_height) return;
 
 	// fill sample - NOT doing alpha blending!
-	// TODO: Call fill_pixel here to run alpha blending
 	sample_buffer[4 * (sx + sy * ss_width)] = (uint8_t)(color.r * 255);
 	sample_buffer[4 * (sx + sy * ss_width) + 1] = (uint8_t)(color.g * 255);
 	sample_buffer[4 * (sx + sy * ss_width) + 2] = (uint8_t)(color.b * 255);
@@ -45,39 +44,22 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 
 	Color pixel_color;
 	float inv255 = 1.0f / 255.0f;
-	pixel_color.r = pixel_buffer[4 * (x + y * width)] * inv255;
-	pixel_color.g = pixel_buffer[4 * (x + y * width) + 1] * inv255;
-	pixel_color.b = pixel_buffer[4 * (x + y * width) + 2] * inv255;
-	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255;
+	float weight = 1.0f / (this->sample_rate * this->sample_rate);
+
+	pixel_color.r = pixel_buffer[4 * (x + y * width)] * inv255 * 1;
+	pixel_color.g = pixel_buffer[4 * (x + y * width) + 1] * inv255 * 1;
+	pixel_color.b = pixel_buffer[4 * (x + y * width) + 2] * inv255 * 1;
+	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255 * 1;
 
 	// todo take sample size into account in mix math
+	
 	pixel_color = ref->alpha_blending_helper(pixel_color, color);
 
-	pixel_buffer[4 * (x + y * width)] = (uint8_t)(pixel_color.r * 255);
-	pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(pixel_color.g * 255);
-	pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(pixel_color.b * 255);
-	pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(pixel_color.a * 255);
+	pixel_buffer[4 * (x + y * width)] += (uint8_t)(pixel_color.r * 255);
+	pixel_buffer[4 * (x + y * width) + 1] += (uint8_t)(pixel_color.g * 255);
+	pixel_buffer[4 * (x + y * width) + 2] += (uint8_t)(pixel_color.b * 255);
+	pixel_buffer[4 * (x + y * width) + 3] += (uint8_t)(pixel_color.a * 255);
 
-
-	/*Color c(0.0f, 0.0f, 0.0f, 0.0f);
-	int block_sizex = x * sample_rate;
-	int block_sizey = y * sample_rate;
-	for (int ssx = block_sizex; ssx < block_sizex + sample_rate; ssx++)
-		for (int ssy = block_sizey; ssy < block_sizey + sample_rate; ssy++)
-		{
-			c.r += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate)]) / 255.0f;
-			c.g += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
-			c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
-			c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
-		}
-	c.r /= sample_rate * sample_rate;
-	c.g /= sample_rate * sample_rate;
-	c.b /= sample_rate * sample_rate;
-	c.a /= sample_rate * sample_rate;
-	pixel_buffer[4 * (x + y * width)] = (uint8_t)(c.r * 255);
-	pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(c.g * 255);
-	pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(c.b * 255);
-	pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(c.a * 255);*/
 }
 
 void SoftwareRendererImp::draw_svg( SVG& svg ) {
@@ -115,7 +97,14 @@ void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
   // Task 2: 
   // You may want to modify this for supersampling support
   this->sample_rate = sample_rate;
+  printf("sample rate: %zu\n", sample_rate);
 
+  if (this->sample_buffer != nullptr)
+  {
+	  delete[] this->sample_buffer;
+	  this->sample_buffer = nullptr;
+  }
+  this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
 }
 
 void SoftwareRendererImp::set_pixel_buffer( unsigned char* pixel_buffer,
@@ -126,7 +115,13 @@ void SoftwareRendererImp::set_pixel_buffer( unsigned char* pixel_buffer,
   this->pixel_buffer = pixel_buffer;
   this->width = width;
   this->height = height;
-  this->sample_buffer = new unsigned char[4 * this->sample_rate * width * height];
+
+  if (this->sample_buffer != nullptr)
+  {
+	  delete[] this->sample_buffer;
+	  this->sample_buffer = nullptr;
+  }
+  this->sample_buffer = new unsigned char[4 * this->sample_rate * this->sample_rate * width * height];
 }
 
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
@@ -475,17 +470,26 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
 	float miny = min(y0, min(y1, y2));
 	float maxy = max(y0, max(y1, y2));
 	float sample_ctr_offset = 1.0f / (sample_rate * 2.0f);
+	float sample_step = 1.0f / sample_rate;
 
-	for (float x = floor(minx), ssx = x; x < maxx; x = x+(1/sample_rate), ssx++)
-		for (float y = floor(miny), ssy = y; y < maxy; y = y+(1/sample_rate), ssy++)
+	for (int x = floor(minx); x < maxx; x++)
+		for (int y = floor(miny); y < maxy; y++)
 		{
-			if (((x + sample_ctr_offset) - x0) * (y1 - y0) - ((y + sample_ctr_offset) - y0) * (x1 - x0) > 0) // inside ab
-				continue;
-			if (((x + sample_ctr_offset) - x1) * (y2 - y1) - ((y + sample_ctr_offset) - y1) * (x2 - x1) > 0) // inside ab
-				continue;
-			if (((x + sample_ctr_offset) - x2) * (y0 - y2) - ((y + sample_ctr_offset) - y2) * (x0 - x2) > 0) // inside ab
-				continue;
-			fill_sample(ssx, ssy, color);
+			for (int sample_x = 0; sample_x < sample_rate; sample_x++)
+			{
+				float stride_x = sample_x * sample_step;
+				for (int sample_y = 0; sample_y < sample_rate; sample_y++)
+				{
+					float stride_y = sample_y * sample_step;
+					if (((x + stride_x + sample_ctr_offset) - x0) * (y1 - y0) - ((y + stride_y + sample_ctr_offset) - y0) * (x1 - x0) > 0) // inside ab
+						continue;
+					if (((x + stride_x + sample_ctr_offset) - x1) * (y2 - y1) - ((y + stride_y + sample_ctr_offset) - y1) * (x2 - x1) > 0) // inside ab
+						continue;
+					if (((x + stride_x + sample_ctr_offset) - x2) * (y0 - y2) - ((y + stride_y + sample_ctr_offset) - y2) * (x0 - x2) > 0) // inside ab
+						continue;
+					fill_sample(x*sample_rate + sample_x, y*sample_rate + sample_y, color);
+				}
+			}
 		}
 	// Advanced Task
   // Implementing Triangle Edge Rules
@@ -523,7 +527,7 @@ void SoftwareRendererImp::resolve( void ) {
 					fill_pixel(x, y, c);
 				}
 		}
-  return;
+	return;
 
 }
 
