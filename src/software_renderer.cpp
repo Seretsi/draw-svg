@@ -125,8 +125,9 @@ void SoftwareRendererImp::draw_element( SVGElement* element ) {
 
 	// Task 3 (part 1):
 	// Modify this to implement the transformation stack
-
-	switch (element->type) {
+	 //transformation = element->transform * transformation;
+	 transformation = transformation*element->transform;
+	 switch (element->type) {
 	case POINT:
 		draw_point(static_cast<Point&>(*element));
 		break;
@@ -154,7 +155,8 @@ void SoftwareRendererImp::draw_element( SVGElement* element ) {
 	default:
 		break;
 	}
-
+	 //this->transformation = element->transform.inv()*transformation;
+	 transformation = transformation * element->transform.inv();
 }
 
 
