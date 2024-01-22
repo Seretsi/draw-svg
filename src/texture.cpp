@@ -107,14 +107,69 @@ Color Sampler2DImp::sample_nearest(Texture& tex,
 
 }
 
+static float* lerp(float* a, float* b, float t)
+{
+    float* c = new float[4];
+	c[0] = a[0] * (1.0f - t) + b[0] * t;
+	c[1] = a[1] * (1.0f - t) + b[1] * t;
+	c[2] = a[2] * (1.0f - t) + b[2] * t;
+	c[3] = a[3] * (1.0f - t) + b[3] * t;
+	return c;
+}
+
 Color Sampler2DImp::sample_bilinear(Texture& tex, 
                                     float u, float v, 
                                     int level) {
   
   // Task 4: Implement bilinear filtering
-
   // return magenta for invalid level
-  return Color(1,0,1,1);
+  if (level != 0 || tex.mipmap.size() == 0) return Color(1,0,1,1);
+
+    u = u > 1.0f ? 1.0f : u;
+    u = u < 0.0f ? 0.0f : u;
+    v = v > 1.0f ? 1.0f : v;
+    v = v < 0.0f ? 0.0f : v;
+    auto mipmap = tex.mipmap[level];
+    
+    float U = (u * mipmap.width);
+    float V = (v * mipmap.height);
+    U = U > mipmap.width - 1 ? mipmap.width - 1 : U;
+    V = V > mipmap.height - 1 ? mipmap.height - 1 : V;
+
+    float U_frac = U - floor(U);
+    float V_frac = V - floor(V);
+    float U_pair = U_frac < 0.5 ? floor(U) - 1 : floor(U) + 1;
+    float V_pair = V_frac < 0.5 ? floor(V) - 1 : floor(V) + 1;
+    U_pair = U_pair > mipmap.width - 1 ? mipmap.width - 1 : U_pair;
+    V_pair = V_pair > mipmap.height - 1 ? mipmap.height - 1 : V_pair;
+	U_pair = U_pair < 0 ? 0 : U_pair;
+    V_pair = V_pair < 0 ? 0 : V_pair;
+
+    float *temp = new float[4];
+    float *temp2 = new float[4];
+    float *temp3 = new float[4];
+    float *temp4 = new float[4];
+
+    uint8_to_float(temp, &mipmap.texels[4 * (floor(U) + floor(V) * mipmap.width)]);
+    uint8_to_float(temp2, &mipmap.texels[4 * (U_pair + floor(V) * mipmap.width)]);
+    uint8_to_float(temp3, &mipmap.texels[4 * (floor(U) + V_pair * mipmap.width)]);
+    uint8_to_float(temp4, &mipmap.texels[4 * (U_pair + V_pair * mipmap.width)]);
+
+    float t1, t2;
+    float sampleU = floor(U) + 0.5f;
+    float sampleV = floor(V) + 0.5f;
+    t1 = (U - sampleU) / ((U_pair+0.5f) - sampleU);
+    t2 = (V - sampleV) / ((V_pair+0.5f) - sampleV);
+
+    auto col1 = lerp(temp2, temp, t1);
+    auto col2 = lerp(temp4, temp3, t1);
+    auto colfinal = lerp(col1, col1, t2);
+    Color c;
+    c.r = colfinal[0];
+    c.g = colfinal[1];
+    c.b = colfinal[2];
+    c.a = colfinal[3];
+    return c;
 
 }
 

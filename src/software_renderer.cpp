@@ -507,7 +507,8 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
 		{
 			float u = (x+0.5 - x0) / (x1+0.5 - x0);
 			float v = (y+0.5 - y0) / (y1+0.5 - y0);
-			Color c = sampler->sample_nearest(tex, u, v, 0);
+			//Color c = sampler->sample_nearest(tex, u, v, 0);
+			Color c = sampler->sample_bilinear(tex, u, v, 0);
 			fill_sample(x, y, c);
 		}
 }
