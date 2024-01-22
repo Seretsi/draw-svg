@@ -24,7 +24,8 @@ void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
 	// check bounds
 	if (sx < 0 || sx >= ss_width) return;
 	if (sy < 0 || sy >= ss_height) return;
-
+	if (color.r > 0.0f)
+		int i = 0;
 	// fill sample - NOT doing alpha blending!
 	sample_buffer[4 * (sx + sy * ss_width)] = (uint8_t)(color.r * 255);
 	sample_buffer[4 * (sx + sy * ss_width) + 1] = (uint8_t)(color.g * 255);
@@ -53,15 +54,19 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 	// todo take sample size into account in mix math
 	pixel_color = ref->alpha_blending_helper(pixel_color, color);
 
-	pixel_buffer[4 * (x + y * width)] += (uint8_t)(pixel_color.r * 255);
-	pixel_buffer[4 * (x + y * width) + 1] += (uint8_t)(pixel_color.g * 255);
-	pixel_buffer[4 * (x + y * width) + 2] += (uint8_t)(pixel_color.b * 255);
-	pixel_buffer[4 * (x + y * width) + 3] += (uint8_t)(pixel_color.a * 255);
+	pixel_buffer[4 * (x + y * width)] = (uint8_t)(pixel_color.r * 255);
+	pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(pixel_color.g * 255);
+	pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(pixel_color.b * 255);
+	pixel_buffer[4 * (x + y * width) + 3] = (uint8_t)(pixel_color.a * 255);
 
 }
 
 void SoftwareRendererImp::draw_svg( SVG& svg ) {
-
+	// clear sample buffer
+	if (!this->sample_buffer.empty())
+	{
+		this->sample_buffer.assign(this->sample_buffer.size(), 0);
+	}
   // set top level transformation
   transformation = canvas_to_screen;
 
@@ -125,7 +130,6 @@ void SoftwareRendererImp::draw_element( SVGElement* element ) {
 
 	// Task 3 (part 1):
 	// Modify this to implement the transformation stack
-	 //transformation = element->transform * transformation;
 	 transformation = transformation*element->transform;
 	 switch (element->type) {
 	case POINT:
@@ -155,7 +159,6 @@ void SoftwareRendererImp::draw_element( SVGElement* element ) {
 	default:
 		break;
 	}
-	 //this->transformation = element->transform.inv()*transformation;
 	 transformation = transformation * element->transform.inv();
 }
 
@@ -499,7 +502,14 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
                                            Texture& tex ) {
   // Task 4: 
   // Implement image rasterization
-
+	for (int x = floor(x0); x < x1; x++)
+		for (int y = floor(y0); y < y1; y++)
+		{
+			float u = (x+0.5 - x0) / (x1+0.5 - x0);
+			float v = (y+0.5 - y0) / (y1+0.5 - y0);
+			Color c = sampler->sample_nearest(tex, u, v, 0);
+			fill_sample(x, y, c);
+		}
 }
 
 // resolve samples to pixel buffer
@@ -519,14 +529,16 @@ void SoftwareRendererImp::resolve( void ) {
 			for (int ssx = block_sizex; ssx < block_sizex + sample_rate; ssx++)
 				for (int ssy = block_sizey; ssy < block_sizey + sample_rate; ssy++)
 				{
+					if (4 * (ssx + ssy * width * sample_rate) == 204372)
+						int i = 0;
 					c.r += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate)]) / 255.0f;
 					c.g += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 1]) / 255.0f;
 					c.b += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 2]) / 255.0f;
 					c.a += ((float)sample_buffer[4 * (ssx + ssy * width * sample_rate) + 3]) / 255.0f;
+
+					if (c.r+c.g+c.b+c.a > 0.0)
+						int i = 0;
 				}
-			if (x == 567 && y == 360) {
-				int a = 0;
-			}
 			c.r /= (float)(sample_rate * sample_rate);
 			c.g /= (float)(sample_rate * sample_rate);
 			c.b /= (float)(sample_rate * sample_rate);

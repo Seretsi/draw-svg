@@ -84,9 +84,28 @@ Color Sampler2DImp::sample_nearest(Texture& tex,
                                    int level) {
 
   // Task 4: Implement nearest neighbour interpolation
-  
-  // return magenta for invalid level
-  return Color(1,0,1,1);
+    u = u > 1.0f ? 1.0f : u;
+    u = u < 0.0f ? 0.0f : u;
+    v = v > 1.0f ? 1.0f : v;
+    v = v < 0.0f ? 0.0f : v;
+
+    auto mipmap = tex.mipmap[level];
+    Color c;
+    float temp[4];
+    int U = (int)(u * mipmap.width);
+    int V = (int)(v * mipmap.height);/*
+    c.r = mipmap.texels[4 * (U + V * mipmap.width)];
+    c.g = mipmap.texels[4 * (U + V * mipmap.width) + 1];
+    c.b = mipmap.texels[4 * (U + V * mipmap.width) + 2];
+    c.a = mipmap.texels[4 * (U + V * mipmap.width) + 3];*/
+    uint8_to_float(temp, &mipmap.texels[4 * (U + V * mipmap.width)]);
+    c.r = temp[0];
+    c.g = temp[1];
+    c.b = temp[2];
+    c.a = temp[3];
+    return c;
+    // return magenta for invalid level
+    //return Color(1,0,1,1);
 
 }
 

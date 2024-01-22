@@ -423,7 +423,7 @@ void DrawSVG::dec_sample_rate() {
 void DrawSVG::redraw() {
 
   clear();
-
+  
   // set canvas_to_screen transformation
   Matrix3x3 m_imp = norm_to_screen * viewport_imp[current_tab]->get_canvas_to_norm();
   Matrix3x3 m_ref = norm_to_screen * viewport_ref[current_tab]->get_canvas_to_norm();
