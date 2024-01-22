@@ -88,16 +88,14 @@ Color Sampler2DImp::sample_nearest(Texture& tex,
     u = u < 0.0f ? 0.0f : u;
     v = v > 1.0f ? 1.0f : v;
     v = v < 0.0f ? 0.0f : v;
-
     auto mipmap = tex.mipmap[level];
     Color c;
     float temp[4];
-    int U = (int)(u * mipmap.width);
-    int V = (int)(v * mipmap.height);/*
-    c.r = mipmap.texels[4 * (U + V * mipmap.width)];
-    c.g = mipmap.texels[4 * (U + V * mipmap.width) + 1];
-    c.b = mipmap.texels[4 * (U + V * mipmap.width) + 2];
-    c.a = mipmap.texels[4 * (U + V * mipmap.width) + 3];*/
+    int U = round(u * mipmap.width);
+    U = U > mipmap.width - 1 ? mipmap.width - 1 : U;
+    int V = round(v * mipmap.height);
+    V = V > mipmap.height - 1 ? mipmap.height - 1 : V;
+
     uint8_to_float(temp, &mipmap.texels[4 * (U + V * mipmap.width)]);
     c.r = temp[0];
     c.g = temp[1];
