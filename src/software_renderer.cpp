@@ -502,14 +502,21 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
                                            Texture& tex ) {
   // Task 4: 
   // Implement image rasterization
+	float stepU = (1.0 / (x1 - x0)) / sample_rate;
+	float stepV = (1.0 / (y1 - y0)) / sample_rate;
 	for (int x = floor(x0); x < x1; x++)
 		for (int y = floor(y0); y < y1; y++)
 		{
-			float u = (x - x0) / (x1 - x0);
-			float v = (y - y0) / (y1 - y0);
-			//Color c = sampler->sample_nearest(tex, u, v, 0);
-			Color c = sampler->sample_bilinear(tex, u, v, 0);
-			fill_sample(x, y, c);
+			for (int sampleU = 0; sampleU < sample_rate; sampleU++)
+				for (int sampleV = 0; sampleV < sample_rate; sampleV++)
+				{
+					float strideU = sampleU * stepU;
+					float strideV = sampleV * stepV;
+					float u = strideU + (x - x0) / (x1 - x0);
+					float v = strideV + (y - y0) / (y1 - y0);
+					Color c = sampler->sample_bilinear(tex, u, v, 0);
+					fill_sample(x*sample_rate + sampleU, y*sample_rate + sampleV, c);
+				}
 		}
 }
 
