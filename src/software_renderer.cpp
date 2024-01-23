@@ -52,8 +52,11 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
 	pixel_color.a = pixel_buffer[4 * (x + y * width) + 3] * inv255;
 
 	// todo take sample size into account in mix math
-	pixel_color = ref->alpha_blending_helper(pixel_color, color);
-
+	//pixel_color = ref->alpha_blending_helper(pixel_color, color);
+	if (color.r + color.g + color.b + color.a > 0.0f)
+		int i = 0;
+	pixel_color = this->alpha_blending(pixel_color, color);
+	
 	pixel_buffer[4 * (x + y * width)] = (uint8_t)(pixel_color.r * 255);
 	pixel_buffer[4 * (x + y * width) + 1] = (uint8_t)(pixel_color.g * 255);
 	pixel_buffer[4 * (x + y * width) + 2] = (uint8_t)(pixel_color.b * 255);
@@ -561,7 +564,14 @@ Color SoftwareRendererImp::alpha_blending(Color pixel_color, Color color)
 {
   // Task 5
   // Implement alpha compositing
-  return pixel_color;
+	Color out;
+	out.a = 1 - (1 - color.a) * (1 - pixel_color.a);
+	//out.a = color.a + pixel_color.a * (1 - color.a);
+	out.r = (1 - color.a) * pixel_color.r + color.r;
+	out.g = (1 - color.a) * pixel_color.g + color.g;
+	out.b = (1 - color.a) * pixel_color.b + color.b;
+
+  return out;
 }
 
 
