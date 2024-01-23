@@ -158,17 +158,23 @@ Color Sampler2DImp::sample_bilinear(Texture& tex,
     float t1, t2;
     float sampleU = floor(U) + 0.5f;
     float sampleV = floor(V) + 0.5f;
-    t1 = (U - sampleU) / ((U_pair+0.5f) - sampleU);
-    t2 = (V - sampleV) / ((V_pair+0.5f) - sampleV);
+    
+    t1 = ((U_pair + 0.5f) - sampleU) == 0.0f ? 0.0f : (U - sampleU) / ((U_pair + 0.5f) - sampleU);
+    t2 = ((V_pair + 0.5f) - sampleV) == 0.0f ? 0.0f : (V - sampleV) / ((V_pair + 0.5f) - sampleV);
 
     auto col1 = lerp(temp2, temp, t1);
     auto col2 = lerp(temp4, temp3, t1);
-    auto colfinal = lerp(col1, col1, t2);
+    auto colfinal = lerp(col1, col2, t2);
     Color c;
     c.r = colfinal[0];
     c.g = colfinal[1];
     c.b = colfinal[2];
     c.a = colfinal[3];
+
+    delete[] temp;
+    delete[] temp2;
+    delete[] temp3;
+    delete[] temp4;
     return c;
 
 }
