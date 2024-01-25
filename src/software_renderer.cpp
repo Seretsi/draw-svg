@@ -304,10 +304,11 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
 
   // fill sample - NOT doing alpha blending!
   // TODO: Call fill_pixel here to run alpha blending
-  pixel_buffer[4 * (sx + sy * width)] = (uint8_t)(color.r * 255);
+ /* pixel_buffer[4 * (sx + sy * width)] = (uint8_t)(color.r * 255);
   pixel_buffer[4 * (sx + sy * width) + 1] = (uint8_t)(color.g * 255);
   pixel_buffer[4 * (sx + sy * width) + 2] = (uint8_t)(color.b * 255);
-  pixel_buffer[4 * (sx + sy * width) + 3] = (uint8_t)(color.a * 255);
+  pixel_buffer[4 * (sx + sy * width) + 3] = (uint8_t)(color.a * 255);*/
+  fill_pixel(x, y, color);
 }
 
 void swaps(float& x0, float& y0,
