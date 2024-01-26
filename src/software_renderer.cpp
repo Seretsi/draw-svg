@@ -372,12 +372,12 @@ void SoftwareRendererImp::wu_line(float x0, float y0,
 	float ypxl1 = floor(yend);
 	if (steep)
 	{
-		rasterize_point(ypxl1, xpxl1, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(ypxl1, xpxl1, color * rfpart(yend) * xgap); // todo: avoid alpha changes
 		rasterize_point(ypxl1 + 1, xpxl1, color * fpart(yend) * xgap);
 	}
 	else
 	{
-		rasterize_point(xpxl1, ypxl1, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(xpxl1, ypxl1, color * rfpart(yend) * xgap); // todo: avoid alpha changes
 		rasterize_point(xpxl1, ypxl1 + 1, color * fpart(yend) * xgap);
 	}
 	float intery = yend + gradient; // first y-intersection for the main loop
@@ -388,14 +388,16 @@ void SoftwareRendererImp::wu_line(float x0, float y0,
 	xgap = fpart(x1 + 0.5f);
 	float xpxl2 = xend;
 	float ypxl2 = floor(yend);
+	int line_thickness = 2; 
+
 	if (steep)
 	{
-		rasterize_point(ypxl2, xpxl2, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(ypxl2, xpxl2, color * rfpart(yend) * xgap); // todo: avoid alpha changes
 		rasterize_point(ypxl2 + 1, xpxl2, color * fpart(yend) * xgap);
 	}
 	else
 	{
-		rasterize_point(xpxl2, ypxl2, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(xpxl2, ypxl2, color * rfpart(yend) * xgap); // todo: avoid alpha changes
 		rasterize_point(xpxl2, ypxl2 + 1, color * fpart(yend) * xgap);
 	}
 
@@ -405,7 +407,8 @@ void SoftwareRendererImp::wu_line(float x0, float y0,
 		for (int x = xpxl1 + 1; x < xpxl2; x++)
 		{
 			rasterize_point(floor(intery), x, color * rfpart(intery));
-			rasterize_point(floor(intery) + 1, x, color * fpart(intery));
+			for (int i = 1; i < line_thickness; i++)
+				rasterize_point(floor(intery) + i, x, color * fpart(intery));
 			intery += gradient;
 		}
 	}
@@ -414,7 +417,8 @@ void SoftwareRendererImp::wu_line(float x0, float y0,
 		for (int x = xpxl1 + 1; x < xpxl2; x++)
 		{
 			rasterize_point(x, floor(intery), color * rfpart(intery));
-			rasterize_point(x, floor(intery) + 1, color * fpart(intery));
+			for (int i = 1; i < line_thickness; i++)
+				rasterize_point(x, floor(intery) + i, color * fpart(intery));
 			intery += gradient;
 		}
 	}
@@ -429,92 +433,92 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
 	if (x1 < 0 || x1 >= width) return;
 	if (y1 < 0 || y1 >= height) return;
 	// Task 0: 
-  // Implement Bresenham's algorithm (delete the line below and implement your own)
-  //ref->rasterize_line_helper(x0, y0, x1, y1, width, height, color, this);
-	/*if (x0 > x1)
-		swaps(x0, y0, x1, y1);
+	  // Implement Bresenham's algorithm (delete the line below and implement your own)
+	  // ref->rasterize_line_helper(x0, y0, x1, y1, width, height, color, this);
+		/*if (x0 > x1)
+			swaps(x0, y0, x1, y1);
 
-	if (y0 <= y1)
-	{
-		if ((y1 - y0)/(x1 - x0) > 1.0f)
+		if (y0 <= y1)
 		{
-			// mirror the line over y = x
-			float temp;
-			temp = x0; x0 = y0; y0 = temp;
-			temp = x1; x1 = y1; y1 = temp;
-			if (x0 > x1) swaps(x0, y0, x1, y1);
-			float dx = x1 - x0,
-				dy = y1 - y0,
-				y = y0,
-				eps = 0;
+			if ((y1 - y0)/(x1 - x0) > 1.0f)
+			{
+				// mirror the line over y = x
+				float temp;
+				temp = x0; x0 = y0; y0 = temp;
+				temp = x1; x1 = y1; y1 = temp;
+				if (x0 > x1) swaps(x0, y0, x1, y1);
+				float dx = x1 - x0,
+					dy = y1 - y0,
+					y = y0,
+					eps = 0;
 
-			for (float x = x0; x <= x1; x++) {
-				rasterize_point(y, x, color);
-				eps += dy;
-				if ((eps * 2) >= dx) {
-					y++;  eps -= dx;
+				for (float x = x0; x <= x1; x++) {
+					rasterize_point(y, x, color);
+					eps += dy;
+					if ((eps * 2) >= dx) {
+						y++;  eps -= dx;
+					}
+				}
+			}
+			else
+			{
+				//step over x
+				float dx = x1 - x0,
+					dy = y1 - y0,
+					y = y0,
+					eps = 0;
+
+				for (float x = x0; x <= x1; x++) {
+					rasterize_point(x, y, color);
+					eps += dy;
+					if ((eps * 2) >= dx) {
+						y++;  eps -= dx;
+					}
 				}
 			}
 		}
 		else
 		{
-			//step over x
-			float dx = x1 - x0,
-				dy = y1 - y0,
-				y = y0,
-				eps = 0;
+			if ((y1 - y0)/(x1 - x0) < -1.0f)
+			{
+				// mirror the line over y = x
+				float temp;
+				temp = x0; x0 = y0; y0 = temp;
+				temp = x1; x1 = y1; y1 = temp;
+				if (x0 > x1) swaps(x0, y0, x1, y1);
+				float dx = x1 - x0,
+					dy = y1 - y0,
+					y = y0,
+					eps = 0;
 
-			for (float x = x0; x <= x1; x++) {
-				rasterize_point(x, y, color);
-				eps += dy;
-				if ((eps * 2) >= dx) {
-					y++;  eps -= dx;
+				for (float x = x0; x <= x1; x++) {
+					rasterize_point(y, x, color);
+					eps += dy;
+					if ((eps * 2) < -dx) {
+						y--;  eps += dx;
+					}
+				}
+			}
+			else
+			{
+				//step over x
+				float dx = x1 - x0,
+					dy = y1 - y0,
+					y = y0,
+					eps = 0;
+
+				for (float x = x0; x <= x1; x++) {
+					rasterize_point(x, y, color);
+					eps += dy;
+					if ((eps * 2) < -dx) {
+						y--;  eps += dx;
+					}
 				}
 			}
 		}
-	}
-	else
-	{
-		if ((y1 - y0)/(x1 - x0) < -1.0f)
-		{
-			// mirror the line over y = x
-			float temp;
-			temp = x0; x0 = y0; y0 = temp;
-			temp = x1; x1 = y1; y1 = temp;
-			if (x0 > x1) swaps(x0, y0, x1, y1);
-			float dx = x1 - x0,
-				dy = y1 - y0,
-				y = y0,
-				eps = 0;
-
-			for (float x = x0; x <= x1; x++) {
-				rasterize_point(y, x, color);
-				eps += dy;
-				if ((eps * 2) < -dx) {
-					y--;  eps += dx;
-				}
-			}
-		}
-		else
-		{
-			//step over x
-			float dx = x1 - x0,
-				dy = y1 - y0,
-				y = y0,
-				eps = 0;
-
-			for (float x = x0; x <= x1; x++) {
-				rasterize_point(x, y, color);
-				eps += dy;
-				if ((eps * 2) < -dx) {
-					y--;  eps += dx;
-				}
-			}
-		}
-	}
-	*/
-  // Advanced Task
-  // Drawing Smooth Lines with Line Width
+		*/
+	  // Advanced Task
+	  // Drawing Smooth Lines with Line Width
 	this->wu_line(x0, y0, x1, y1, color);
 }
 
