@@ -125,7 +125,19 @@ void DrawSVG::keyboard_event(int key, int event, unsigned char mods) {
 void DrawSVG::char_event( unsigned int key ) {
 
   switch( key ) {
-
+    // set line thickness
+    case 't': case 'T':
+        if (software_renderer == software_renderer_imp) {
+            inc_line_thickness();
+        }
+	  redraw();
+	  break;
+    case 'y': case 'Y':
+        if (software_renderer == software_renderer_imp) {
+           dec_line_thickness();
+        }
+        redraw();
+        break;
     // reset view transformation
     case ' ':
       auto_adjust(current_tab);
@@ -405,6 +417,17 @@ void DrawSVG::draw_zoom() {
 
 }
 
+void DrawSVG::inc_line_thickness() {
+    line_thickness = line_thickness > 6 ? 6 : line_thickness + 1;
+    ((SoftwareRendererImp*)software_renderer_imp)->set_line_thickness(line_thickness);
+    redraw();
+}
+
+void DrawSVG::dec_line_thickness() {
+	line_thickness = line_thickness > 1 ? line_thickness - 1 : 1;
+    ((SoftwareRendererImp*)software_renderer_imp)->set_line_thickness(line_thickness);
+	redraw();
+}
 
 void DrawSVG::inc_sample_rate() {
   sample_rate += sample_rate < 4 ? 1 : 0;

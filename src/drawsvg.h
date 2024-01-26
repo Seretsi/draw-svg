@@ -124,6 +124,11 @@ class DrawSVG : public Renderer {
   bool show_zoom;
   void draw_zoom();
 
+  /* line thickness */
+  size_t line_thickness;
+  void inc_line_thickness();
+  void dec_line_thickness();
+
   /* samples rate (sqrt(s/pix)) */
   size_t sample_rate;
   void inc_sample_rate();

@@ -265,7 +265,18 @@ void SoftwareRendererImp::draw_ellipse( Ellipse& ellipse ) {
 
   // Advanced Task
   // Implement ellipse rasterization
+	Color c;
+	c = ellipse.style.fillColor;
+	if (c.a != 0.0f)
+	{
 
+	}
+
+	c = ellipse.style.strokeColor;
+	if (c.a != 0.0f)
+	{
+
+	}
 }
 
 void SoftwareRendererImp::draw_image( Image& image ) {
@@ -388,7 +399,7 @@ void SoftwareRendererImp::wu_line(float x0, float y0,
 	xgap = fpart(x1 + 0.5f);
 	float xpxl2 = xend;
 	float ypxl2 = floor(yend);
-	int line_thickness = 2; 
+	//int line_thickness = 2; 
 
 	if (steep)
 	{
@@ -683,5 +694,9 @@ Color SoftwareRendererImp::alpha_blending(Color pixel_color, Color color)
   return out;
 }
 
+void SoftwareRendererImp::set_line_thickness(int line_thickness)
+{
+	this->line_thickness = line_thickness;
+}
 
 } // namespace CS248

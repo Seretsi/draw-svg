@@ -82,7 +82,9 @@ class SoftwareRenderer : public SVGRenderer {
 class SoftwareRendererImp : public SoftwareRenderer {
 public:
 
-	SoftwareRendererImp(SoftwareRendererRef *ref = NULL) : SoftwareRenderer(), ref(ref) { }
+	SoftwareRendererImp(SoftwareRendererRef *ref = NULL) : SoftwareRenderer(), ref(ref) {
+		line_thickness = 1;
+	}
 
 	// draw an svg input to pixel buffer
 	void draw_svg(SVG& svg);
@@ -96,6 +98,9 @@ public:
 
 	void fill_sample(int sx, int sy, const Color& color);
 	void fill_pixel(int x, int y, const Color& color);
+
+	// set line width
+	void set_line_thickness(int line_thickness);
 
 private:
 
@@ -162,8 +167,10 @@ private:
 
 	SoftwareRendererRef *ref;
 
-	// super sample buffera
+	// super sample buffer
 	std::vector<unsigned char> sample_buffer;
+
+	int line_thickness;
 
 }; // class SoftwareRendererImp
 
