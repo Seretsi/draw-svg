@@ -344,6 +344,82 @@ float round(const float& x)
 	return x + 0.5f;
 }
 
+void SoftwareRendererImp::wu_line(float x0, float y0,
+	float x1, float y1,
+	Color color)
+{
+	bool steep = abs(y1 - y0) > abs(x1 - x0);
+	if (steep)
+	{
+		swizzle_swap(x0, y0);
+		swizzle_swap(x1, y1);
+	}
+	if (x0 > x1)
+	{
+		swaps(x0, y0, x1, y1);
+	}
+
+	float dx = x1 - x0;
+	float dy = y1 - y0;
+
+	float gradient = dx == 0.0f ? 1.0f : dy / dx;
+
+	// handle first endpoint
+	float xend = round(x0);
+	float yend = y0 + gradient * (xend - x0);
+	float xgap = rfpart(x0 + 0.5f);
+	float xpxl1 = xend; // this will be used in the main loop
+	float ypxl1 = floor(yend);
+	if (steep)
+	{
+		rasterize_point(ypxl1, xpxl1, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(ypxl1 + 1, xpxl1, color * fpart(yend) * xgap);
+	}
+	else
+	{
+		rasterize_point(xpxl1, ypxl1, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(xpxl1, ypxl1 + 1, color * fpart(yend) * xgap);
+	}
+	float intery = yend + gradient; // first y-intersection for the main loop
+
+	// handle second endpoint
+	xend = round(x1);
+	yend = y1 + gradient * (xend - x1);
+	xgap = fpart(x1 + 0.5f);
+	float xpxl2 = xend;
+	float ypxl2 = floor(yend);
+	if (steep)
+	{
+		rasterize_point(ypxl2, xpxl2, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(ypxl2 + 1, xpxl2, color * fpart(yend) * xgap);
+	}
+	else
+	{
+		rasterize_point(xpxl2, ypxl2, color * rfpart(yend) * xgap); // avoid alpha changes
+		rasterize_point(xpxl2, ypxl2 + 1, color * fpart(yend) * xgap);
+	}
+
+	// main loop
+	if (steep)
+	{
+		for (int x = xpxl1 + 1; x < xpxl2; x++)
+		{
+			rasterize_point(floor(intery), x, color * rfpart(intery));
+			rasterize_point(floor(intery) + 1, x, color * fpart(intery));
+			intery += gradient;
+		}
+	}
+	else
+	{
+		for (int x = xpxl1 + 1; x < xpxl2; x++)
+		{
+			rasterize_point(x, floor(intery), color * rfpart(intery));
+			rasterize_point(x, floor(intery) + 1, color * fpart(intery));
+			intery += gradient;
+		}
+	}
+}
+
 void SoftwareRendererImp::rasterize_line( float x0, float y0,
                                           float x1, float y1,
                                           Color color) {
@@ -439,76 +515,7 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
 	*/
   // Advanced Task
   // Drawing Smooth Lines with Line Width
-	bool steep = abs(y1 - y0) > abs(x1 - x0);
-	if (steep)
-	{
-		swizzle_swap(x0, y0);
-		swizzle_swap(x1, y1);
-	}
-	if (x0 > x1)
-	{
-		swaps(x0, y0, x1, y1);
-	}
-
-	float dx = x1 - x0;
-	float dy = y1 - y0;
-
-	float gradient = dx == 0.0f ? 1.0f : dy / dx;
-
-	// handle first endpoint
-	float xend = round(x0);
-	float yend = y0 + gradient * (xend - x0);
-	float xgap = rfpart(x0 + 0.5f);
-	float xpxl1 = xend; // this will be used in the main loop
-	float ypxl1 = floor(yend);
-	if (steep)
-	{
-		rasterize_point(ypxl1, xpxl1, color * rfpart(yend) * xgap); // avoid alpha changes
-		rasterize_point(ypxl1 + 1, xpxl1, color * fpart(yend) * xgap);
-	}
-	else
-	{
-		rasterize_point(xpxl1, ypxl1, color * rfpart(yend) * xgap); // avoid alpha changes
-		rasterize_point(xpxl1, ypxl1 + 1, color * fpart(yend) * xgap);
-	}
-	float intery = yend + gradient; // first y-intersection for the main loop
-
-	// handle second endpoint
-	xend = round(x1);
-	yend = y1 + gradient * (xend - x1);
-	xgap = fpart(x1 + 0.5f);
-	float xpxl2 = xend;
-	float ypxl2 = floor(yend);
-	if (steep)
-	{
-		rasterize_point(ypxl2, xpxl2, color * rfpart(yend) * xgap); // avoid alpha changes
-		rasterize_point(ypxl2 + 1, xpxl2, color * fpart(yend) * xgap);
-	}
-	else
-	{
-		rasterize_point(xpxl2, ypxl2, color * rfpart(yend) * xgap); // avoid alpha changes
-		rasterize_point(xpxl2, ypxl2 + 1, color * fpart(yend) * xgap);
-	}
-
-	// main loop
-	if (steep)
-	{
-		for (int x = xpxl1 + 1; x < xpxl2; x++)
-		{
-			rasterize_point(floor(intery), x, color * rfpart(intery));
-			rasterize_point(floor(intery) + 1, x, color * fpart(intery));
-			intery += gradient;
-		}
-	}
-	else
-	{
-		for (int x = xpxl1 + 1; x < xpxl2; x++)
-		{
-			rasterize_point(x, floor(intery), color * rfpart(intery));
-			rasterize_point(x, floor(intery) + 1, color * fpart(intery));
-			intery += gradient;
-		}
-	}
+	this->wu_line(x0, y0, x1, y1, color);
 }
 
 void SoftwareRendererImp::rasterize_triangle( float x0, float y0,

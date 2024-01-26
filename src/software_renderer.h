@@ -138,6 +138,11 @@ private:
 		float x1, float y1,
 		Color color);
 
+	// wu line helper function
+	void wu_line(float x0, float y0,
+				float x1, float y1,
+				Color color);
+
 	// rasterize a triangle
 	void rasterize_triangle(float x0, float y0,
 		float x1, float y1,
